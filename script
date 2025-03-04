@@ -1,0 +1,143 @@
+const puppeteer = require('puppeteer-extra');
+const StealthPlugin = require('puppeteer-extra-plugin-stealth');
+const randomUseragent = require('random-useragent');
+
+puppeteer.use(StealthPlugin());
+
+const urls = [
+    'https://shafin778.blogspot.com/2025/03/free-air-fryer-recipes-pdf.html',
+    'https://shafin778.blogspot.com/2025/03/easy-hummus-recipe-with-canned-chick',
+	 'https://shafin778.blogspot.com/2025/03/easy-falafel-recipe-with-canned.html',
+	 'https://shafin778.blogspot.com/2025/03/how-to-cook-with-spelt-flour.html',
+   
+];
+
+const referers = [
+    'https://www.google.com/',
+    'https://www.facebook.com/',
+    'https://www.twitter.com/',
+    // Add all your referers here...
+];
+
+const proxyUrl = 'residential-unlimited.geonode.com:9000';
+const proxyUsername = 'geonode_HkVMLKf7KO';
+const proxyPassword = '7950b4db-8283-4cfd-b243-a28e0e311810';
+
+function getRandomInt(min, max) {
+    return Math.floor(Math.random() * (max - min + 1)) + min;
+}
+
+async function simulateHumanInteraction(page) {
+    console.log('Scrolling the page');
+    await page.evaluate(() => {
+        window.scrollBy(0, window.innerHeight * Math.random());
+    });
+
+    await page.waitForTimeout(getRandomInt(2000, 5000));
+
+    // Add an iFrame to the page
+    console.log('Adding iFrame to the page');
+    await page.evaluate(() => {
+        const iframe = document.createElement('iframe');
+        iframe.src = 'https://example.com'; // Replace with your desired iFrame URL
+        iframe.style.width = '100%';
+        iframe.style.height = '500px';
+        document.body.appendChild(iframe);
+    });
+
+    // Wait for 60 seconds
+    console.log('Waiting for 60 seconds...');
+    await page.waitForTimeout(60000);
+
+    // Click a random post
+    const posts = await page.$$('a'); // Adjust the selector to match your posts
+    if (posts.length > 0) {
+        const randomPost = posts[Math.floor(Math.random() * posts.length)];
+        try {
+            const postText = await page.evaluate(el => el.textContent, randomPost);
+            console.log(`Clicking on post: ${postText}`);
+            await randomPost.click();
+        } catch (err) {
+            console.log('Post not clickable:', err);
+        }
+    }
+
+    await page.waitForTimeout(getRandomInt(2000, 5000));
+}
+
+async function visitAndInteract(browser, url) {
+    const page = await browser.newPage();
+    const userAgent = randomUseragent.getRandom();
+    const referer = referers[Math.floor(Math.random() * referers.length)];
+    const viewport = {
+        width: getRandomInt(1200, 1920),
+        height: getRandomInt(800, 1080),
+        deviceScaleFactor: 1,
+        isMobile: false,
+        hasTouch: false,
+        isLandscape: true
+    };
+
+    await page.setUserAgent(userAgent);
+    await page.setExtraHTTPHeaders({ referer });
+    await page.setViewport(viewport);
+
+    console.log(`Using referer: ${referer}`);
+    console.log(`Browser fingerprint: User Agent: ${userAgent}, Viewport: ${JSON.stringify(viewport)}`);
+
+    try {
+        await page.authenticate({ username: proxyUsername, password: proxyPassword });
+        await page.goto(url, { waitUntil: 'networkidle2', timeout: 60000 });
+
+        console.log(`Visiting URL: ${url}`);
+        await page.waitForTimeout(getRandomInt(3000, 5000));
+        await simulateHumanInteraction(page);
+
+        const buttons = await page.$$('button.btn-primary');
+        if (buttons.length > 0) {
+            for (const button of buttons) {
+                try {
+                    const buttonText = await page.evaluate(el => el.textContent, button);
+                    await button.click();
+                    console.log(`Clicked button: ${buttonText}`);
+                    await page.waitForTimeout(getRandomInt(3000, 5000));
+                } catch (err) {
+                    console.log('Button not clickable:', err);
+                }
+            }
+        }
+    } catch (error) {
+        console.error('An error occurred:', error);
+    } finally {
+        console.log('Closing page');
+        await page.close();
+    }
+}
+
+(async () => {
+    while (true) {
+        for (const url of urls) {
+            try {
+                console.log(`Launching browser with proxy: ${proxyUrl}`);
+                const browser = await puppeteer.launch({
+                    headless: true,
+                    args: [
+                        `--proxy-server=${proxyUrl}`,
+                        '--disable-setuid-sandbox',
+                        '--no-sandbox',
+                        '--disable-web-security',
+                        '--disable-features=IsolateOrigins,site-per-process',
+                    ],
+                    ignoreHTTPSErrors: true,
+                });
+
+                await visitAndInteract(browser, url);
+                await browser.close();
+            } catch (err) {
+                console.error('Error during interaction:', err);
+            }
+
+            await new Promise(resolve => setTimeout(resolve, getRandomInt(5000, 10000)));
+        }
+    }
+})();
