@@ -5,10 +5,9 @@ const randomUseragent = require('random-useragent');
 puppeteer.use(StealthPlugin());
 
 const urls = [
-    'https://shafin778.blogspot.com/2025/03/free-air-fryer-recipes-pdf.html',
+    'https://elegent.xyz',
     'https://shafin778.blogspot.com/2025/03/easy-hummus-recipe-with-canned-chick',
-	 'https://shafin778.blogspot.com/2025/03/easy-falafel-recipe-with-canned.html',
-	 'https://shafin778.blogspot.com/2025/03/how-to-cook-with-spelt-flour.html',
+	
    
 ];
 
